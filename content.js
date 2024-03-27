@@ -53,34 +53,76 @@ function createButton(input) {
     const button = document.createElement('button');
     button.innerHTML = 'Fill';
     button.style.position = 'absolute';
-    button.style.right = '5px';
-    button.style.top = '5px';
-    button.style.zIndex = '9999';
-    button.onclick = function () {
-        fillInput(input);
-    };
+    button.style.zIndex = '9999'; // Set the z-index to a high value
+    button.style.display = 'none'; // Initially hide the button
 
-    input.parentNode.appendChild(button);
+    // Function to position the button relative to the input
+    function positionButton() {
+        const rect = input.getBoundingClientRect();
+        const inputStyle = window.getComputedStyle(input);
+        const inputPaddingTop = parseFloat(inputStyle.paddingTop);
+        const inputPaddingRight = parseFloat(inputStyle.paddingRight);
+        const inputPaddingBottom = parseFloat(inputStyle.paddingBottom);
+        const inputPaddingLeft = parseFloat(inputStyle.paddingLeft);
+        const inputBorderTop = parseFloat(inputStyle.borderTopWidth);
+        const inputBorderRight = parseFloat(inputStyle.borderRightWidth);
+        const inputBorderBottom = parseFloat(inputStyle.borderBottomWidth);
+        const inputBorderLeft = parseFloat(inputStyle.borderLeftWidth);
 
-    // Show the button when input is clicked or focused
+        const buttonWidth = button.offsetWidth;
+        const buttonHeight = button.offsetHeight;
+
+        // Calculate button position relative to the input
+        let buttonLeft, buttonTop;
+
+        if (input.tagName === 'TEXTAREA') {
+            buttonLeft = rect.left + window.scrollX + rect.width - inputPaddingRight - inputBorderRight - buttonWidth - 5;
+            buttonTop = rect.top + window.scrollY + inputPaddingTop + inputBorderTop;
+        } else {
+            buttonLeft = rect.left + window.scrollX + rect.width - inputPaddingRight - inputBorderRight - buttonWidth;
+            buttonTop = rect.top + window.scrollY + inputPaddingTop + inputBorderTop + (rect.height - inputPaddingTop - inputPaddingBottom - inputBorderTop - inputBorderBottom - buttonHeight) / 2;
+        }
+
+        button.style.left = buttonLeft + 'px';
+        button.style.top = buttonTop + 'px';
+    }
+
+    // Attach event listeners to show/hide the button
     input.addEventListener('click', function () {
+        positionButton();
         button.style.display = 'block';
     });
 
     input.addEventListener('focus', function () {
+        positionButton();
         button.style.display = 'block';
     });
 
-    // Hide the button when clicked outside
     document.addEventListener('click', function (event) {
         if (!input.contains(event.target)) {
             button.style.display = 'none';
         }
     });
 
+    button.addEventListener('click', function (event) {
+        event.stopPropagation(); // Prevent click event from bubbling up to document
+        fillInput(input);
+        event.preventDefault(); // Prevent form submission
+    });
+
+    // Append button to input parent
+    input.parentNode.appendChild(button);
+
     // Mark the input as processed
     input.dataset.fillButtonAttached = true;
+
+    // Position the button initially
+    positionButton();
+
+    // Update button position when page is scrolled
+    window.addEventListener('scroll', positionButton);
 }
+
 
 // Function to find and attach buttons to eligible input fields and textareas
 function attachButtonsToEligibleInputs() {
